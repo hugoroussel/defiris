@@ -6,24 +6,13 @@ import "../mocks/ATokenMock.sol";
 import "../mocks/LendingPoolMock.sol";
 
 contract Defiris {
-
-  mapping(address => mapping(address => uint256)) balances;
-
-  mapping(address => address) userToCounterparty;
-  mapping(address => address) assetToUser;
-  mapping(address => address) userToAsset;
   mapping(address => address) assetToLendingPool;
-  mapping(address => address) assetToInterestToken;
-
   address counterparty1;
   address counterparty2;
-
   address lendingPool1;
   address lendingPool2;
-
   address interestToken1;
   address interestToken2;
-
   address stablecoin1;
   address stablecoin2;
 
@@ -48,14 +37,6 @@ contract Defiris {
 
     assetToLendingPool[_stablecoin1] = _lendingPool1;
     assetToLendingPool[_stablecoin2] = _lendingPool2;
-    assetToInterestToken[_stablecoin1] = _interestToken1;
-    assetToInterestToken[_stablecoin2] = _interestToken2;
-    userToCounterparty[_party1] = _party2;
-    userToCounterparty[_party2] = _party1;
-    assetToUser[_stablecoin1] = _party1;
-    assetToUser[_stablecoin2] = _party2;
-    userToAsset[_party1] = _stablecoin1;
-    userToAsset[_party2] = _stablecoin2;
   }
 
   modifier respectsContract {
@@ -70,7 +51,6 @@ contract Defiris {
     token.approve(lending_pool_address, _amount);
     LendingPoolMock lp = LendingPoolMock(lending_pool_address);
     lp.deposit(address(_asset), _amount, address(this), 0);
-    balances[_asset][msg.sender] = _amount;
   }
 
 
@@ -92,6 +72,7 @@ contract Defiris {
     lp2.withdraw(stablecoin2, balanceWithInterest2, address(this));
 
     // 3 send back their due back to everyone
+
     // 3a init the contracts
     ERC20 token1 = ERC20(stablecoin1);
     ERC20 token2 = ERC20(stablecoin2);

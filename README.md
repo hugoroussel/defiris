@@ -19,9 +19,41 @@ The users send base assets DAI, ETH, USDC to the contract that then chooses a po
 
 # To do 
 
-- [] Generalize the contract to multiple parties
-- [] Add security features : safeMath, non Reentrancy, timeLocks etc..
-- []
+- [ ] Generalize the contract to multiple parties
+- [ ] Add security features : safeMath, non Reentrancy, timeLocks etc..
+
+
+Concerning first to do : users should be able to send multiple assets and get their respective shares of the interest. 
+
+Let's say we have one pool with 10% APY  USDT and one with 5% APY DAI
+
+Alice drops 800 USDT
+Bob drops 100 DAI
+Charles drops 100 DAI
+
+After three years :
+
+We have in the pool 
+
+1040 aUSDT
+115 aDAI
+115 aDAI
+
+total interest : 
+240 USDT
+15+15 = 30 DAI
+Since Alice contributed to 80% of the pool initially and the others to 10% each we should have 
+
+0.8*270 = 216 going to Alice 
+0.1*270 = 27 going to Bob
+0.1*270 = 27 going to Charles
+
+We just split the interest on each asset by the % of the pool you own i.e
+For Alice 0.8*24O+0.8*30
+For Bob 0.1*240+0.1*30
+etc.
+
+=> Let's try to implement this example in particular. We should not have counterparties anymore :)
 
 
 
