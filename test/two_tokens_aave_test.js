@@ -135,67 +135,8 @@ describe("Aave", function() {
     console.log('balance of defiris of stablecoin 1', await getTokenBalance(stablecoin1, defiris))
     console.log('balance of defiris of stablecoin 2', await getTokenBalance(stablecoin2, defiris))
 
-
     console.log('balance of accO of stablecoins', await getTokenBalance(stablecoin1, acc0), await getTokenBalance(stablecoin2, acc0))
     console.log('balance of acc1 of stablecoins', await getTokenBalance(stablecoin1, acc1), await getTokenBalance(stablecoin2, acc1))
-
-
-
-
-    
-
-    /*
-    // pass some time
-    await passTime1(3, aToken1, aToken2)
-
-    // yes we did accrue interest
-    console.log('asc 1 amount of the first account', await getTokenBalance(aToken1, acc0))
-    console.log('asc 1 amount of the first account', await getTokenBalance(stablecoin1, acc0))
-    console.log('asc 2 amount of the second account', await getTokenBalance(aToken2, acc1))
-    console.log('asc 2 amount of the second account', await getTokenBalance(stablecoin2, acc1))
-    console.log('asc 2 amount of the second account', await getTokenBalance(stablecoin1, lendingPool1))
-    console.log('asc 2 amount of the second account', await getTokenBalance(stablecoin2, lendingPool2))
-
-    await printState()
-
-
-    // 3. approve then deposit your interest bearing tokens into the pool
-
-    JUST_TO_BE_SAFE = 4
-
-    await aToken1.approve(defiris.address, 1000*STABLECOIN_PRECISION*JUST_TO_BE_SAFE)
-    await aToken2.connect(acc1).approve(defiris.address, 1000*STABLECOIN_PRECISION)
-
-    await defiris.deposit(aToken1.address, 1000*STABLECOIN_PRECISION);
-    await defiris.connect(acc1).deposit(aToken2.address, 1000*STABLECOIN_PRECISION);
-
-    console.log('balance defiris contract', await getTokenBalance(aToken1, defiris))
-    console.log('balance defiris contract', await getTokenBalance(aToken2, defiris))
-
-    // 4. pass the time...
-    await passTime1(3, aToken1, aToken2);
-    console.log('balance of atoken of the defiris contract', await getTokenBalance(aToken1, defiris))
-    console.log('balance of atoken of the defiris contract', await getTokenBalance(aToken2, defiris))
-
-
-    /*
-    // 5. Withdraw
-    await defiris.withdraw(aToken1.address, 1000*STABLECOIN_PRECISION);
-    await defiris.connect(acc1).withdraw(aToken2.address, 1000*STABLECOIN_PRECISION);
-
-    console.log('balance defiris contract', await getTokenBalance(aToken1, defiris))
-    console.log('balance defiris contract', await getTokenBalance(aToken2, defiris))
-    */
-
-    /*
-    // 4. Pass the time..
-    passTime(3, aToken1, aToken2)
-    await aToken1.mintInterest(num2str(YEAR_IN_SEC*3))
-    await aToken2.mintInterest(num2str(YEAR_IN_SEC*3))
-    */
-
-
-
 
 
   });

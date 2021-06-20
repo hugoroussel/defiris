@@ -1,43 +1,28 @@
 # Defiris
 
-Port Interest Rate Swaps onto the blockchain.
+An exotic derivative. The idea : be exposed to the yield of multiple products while
+having your principal in a single one.
 
-Typical use case : be exposed to the yield of one asset while keeping your funds into a different asset
+A typical use case : 
 
-What has been done so far : 
+Alice has usdc because she believes it is safer and wants yield on it but finds the dai yield more attractive
+Bob has dai but would like to have his yield in usdc to get exposure on it
 
-1. Simulate the aave market, deposit and get the interest withdrawn
+Ultimately the idea would be to deposit asset into a contract and get yield from multiple pools : so you stake eth and receive dai, wbtc, bal etc..
+
+# What has been done
+1. Simulate the aave market => check test file in `aave-test.js`
+2. Simple unsafe 2 counter-parties based on the aave market
+
+# Design choices
+The users send base assets DAI, ETH, USDC to the contract that then chooses a pool for them
 
 # To do 
 
-1.
+- [] Generalize the contract to multiple parties
+- [] Add security features : safeMath, non Reentrancy, timeLocks etc..
+- []
 
-
-### Todo 
-
-- [x]  Create a first "proxy" contract where the user can deposit tokens that will then deposit them for them into a lending pool 
-- [x] Withdraw principal and interest from the proxy contract before sending it back to the user
-- [x] Find way to get interest accrued over time by the contract
-- [x] Create a second token with a different rate of interest
-
-- [] Clean up contract : users should deposit aTokens directly, implement security & structure
-- [] Understand the "liquidity rate" in the AMockToken
-
-
-Current issue : the contract has to deposit to the lending pools to be registered as a user of the interest gaining token... 
-
-Two choices : 
-
-- either we make a small initial deposit in the constructor which means initiliazing with the two lending pools and have the contract have some small amount of stable coins
-
-disadvantages : seems hacky as hell
-
-- or we just make the users deposit their base assets and we take strategies for them...
-advantages :
- better UX (don't need to get access to aave and compound etc..)
- more complicated?
-
- Okay let's go with #2
 
 
 

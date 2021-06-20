@@ -36,11 +36,14 @@ const STABLECOIN_PRECISION = 1e6
 describe("Aave", function() {
   it("Should return the new greeting once it's changed", async function() {
 
+    // SETUP
+    // ================================================================================================================================================================
+
     async function getTokenBalance(token, account) {
       let b2 = await token.balanceOf(account.address)
       return hexToInt(b2._hex, 16)/STABLECOIN_PRECISION
     }
-    
+
     // Define accounts
     const [acc0, acc1, acc2] = await ethers.getSigners();
 
@@ -79,22 +82,26 @@ describe("Aave", function() {
     await stablecoin.mint(acc1.address, num2str(MINT_AMOUNT*STABLECOIN_PRECISION))
     await stablecoin.mint(acc2.address, num2str(MINT_AMOUNT*STABLECOIN_PRECISION))
 
-    // Initialize the money market
-    /*
-    market = await AaveMarket.deploy(lendingPoolAddressesProvider.address, aToken.address, stablecoin.address)
-    console.log('aave market address', market.address)
-    */
+    // ================================================================================================================================================================
+    // ACTUAL TESTS
     
     // 1. Deposit stablecoins into the Aave Market by approving and depositing
     await stablecoin.approve(lendingPool.address, DEPOSIT_AMOUNT*STABLECOIN_PRECISION)
     await lendingPool.deposit(stablecoin.address, DEPOSIT_AMOUNT*STABLECOIN_PRECISION, acc0.address, 0)
     
     // 2. check balances
-    console.log('balance of aTokens of account 1', await getTokenBalance(aToken, acc0))
+    console.log('balance of aTokens of account 0', await getTokenBalance(aToken, acc0))
     console.log('balance of stablecoins of lending pool', await getTokenBalance(stablecoin, lendingPool))
 
     // 3. Make the time pass
     await passTime(YEARS, aToken)
-    console.log('balance of interestet gaining stablecoins of account A', await getTokenBalance(aToken, acc0))
+    console.log('balance of interest gaining stablecoins of account 0', await getTokenBalance(aToken, acc0))
+
+    // 4. Withdraw the principal + interest
+    balance = await getTokenBalance(aToken, acc0)
+    await lendingPool.withdraw(stablecoin.address, balance*STABLECOIN_PRECISION, acc0.address)
+    console.log('balance of stablecoin of account 0', await getTokenBalance(stablecoin, acc0))
+
+
   });
 });

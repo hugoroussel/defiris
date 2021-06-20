@@ -92,7 +92,6 @@ contract Defiris {
     lp2.withdraw(stablecoin2, balanceWithInterest2, address(this));
 
     // 3 send back their due back to everyone
-
     // 3a init the contracts
     ERC20 token1 = ERC20(stablecoin1);
     ERC20 token2 = ERC20(stablecoin2);
