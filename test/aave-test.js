@@ -11,6 +11,16 @@ const INTEREST_RATE = 1.1
 
 // Utilities
 
+YEARS = 3
+
+async function passTime(years, aToken) {
+    const time = Date.now() + YEAR_IN_SEC * years
+    await ethers.provider.send('evm_setNextBlockTimestamp', [time]); 
+    await ethers.provider.send('evm_mine');
+    await aToken.mintInterest(num2str(YEAR_IN_SEC*years))
+    console.log(years, ' years have passed..')
+}
+
 // Converts a JS number into a string that doesn't use scientific notation
 function num2str(num) {
     return BigNumber(num).integerValue().toFixed()
@@ -61,8 +71,9 @@ describe("Aave", function() {
     console.log(num2str(mintAmount))
 
     // here we mint some stable coins to the lending pool to simulate the pool gaining interests..
+    await stablecoin.mint(lendingPool.address, num2str(mintAmount*10))
 
-    await stablecoin.mint(lendingPool.address, num2str(mintAmount))
+    // mint some tokens for the other participants
     await stablecoin.mint(acc0.address, num2str(mintAmount))
     await stablecoin.mint(acc1.address, num2str(mintAmount))
     await stablecoin.mint(acc2.address, num2str(mintAmount))
@@ -96,53 +107,52 @@ describe("Aave", function() {
     console.log('balance of aave stablecoins of account 1', hexToInt(b4._hex, 16)/STABLECOIN_PRECISION)
 
     // 3. make the time pass..
-
-    YEARS = 3
-
-    let block =  await ethers.provider.getBlock()
-    console.log('block timestamp and block number', block.timestamp, block.number)
-
-    const time = Date.now() + YEAR_IN_SEC * YEARS
-    await ethers.provider.send('evm_setNextBlockTimestamp', [time]); 
-    await ethers.provider.send('evm_mine');
-
-    let block1 =  await ethers.provider.getBlock()
-    console.log('block timestamp and block number', block1.timestamp, block1.number)
-    
-    await aToken.mintInterest(num2str(YEARS * YEAR_IN_SEC))
-
+    await passTime(YEARS, aToken)
     let b5t = await stablecoin.balanceOf(lendingPool.address)
     console.log('balance of stablecoins of lending pool', hexToInt(b5t._hex, 16)/STABLECOIN_PRECISION)
 
     // 4. now try to take out profit?
 
     await lendingPool.withdraw(stablecoin.address, 1300*STABLECOIN_PRECISION, acc0.address)
-
     // the balances should reflect the new situation
     let b5 = await stablecoin.balanceOf(acc0.address)
     console.log('balance of stablecoins of account 1', hexToInt(b5._hex, 16)/STABLECOIN_PRECISION)
-
     let b6 = await aToken.balanceOf(acc0.address)
     console.log('balance of aave stablecoins of account 1', hexToInt(b6._hex, 16)/STABLECOIN_PRECISION)
 
 
-    // 5. Try to deposit tokens in the proxy contract
-    /*
-    let defiris = await Defiris.deploy(stablecoin.address, lendingPool.address)
+    // 5. Deploy defiris contract
+    let defiris = await Defiris.deploy(stablecoin.address, aToken.address, lendingPool.address)
     console.log('address of defiris contract', defiris.address)
 
+    let b7 = await stablecoin.balanceOf(lendingPool.address)
+    console.log('balance of stablecoins of lending pool', hexToInt(b7._hex, 16)/STABLECOIN_PRECISION)
+
+    // 6. Deposit tokens into contract
     await stablecoin.approve(defiris.address, 4*10*STABLECOIN_PRECISION)
     let allowance_defiris_contract = await defiris.deposit(10*STABLECOIN_PRECISION)
 
-    console.log('user deposited', hexToInt(allowance_defiris_contract._hex)/STABLECOIN_PRECISION)
-    */
+    let b8 = await stablecoin.balanceOf(acc0.address)
+    console.log('balance of stablecoins of account 1', hexToInt(b8._hex, 16)/STABLECOIN_PRECISION)
+
+    let b9 = await stablecoin.balanceOf(lendingPool.address)
+    console.log('balance of stablecoins of lending pool', hexToInt(b9._hex, 16)/STABLECOIN_PRECISION)
 
     
 
+    // 7. pass time ..
+
+    await passTime(3, aToken)
+
+    let b10 = await aToken.balanceOf(defiris.address)
+    console.log('balance of stablecoins of lending pool', hexToInt(b10._hex, 16)/STABLECOIN_PRECISION)
 
 
+    // 8. withdraw tokens from contract
 
-
+    await defiris.withdraw()
+    let b11 = await stablecoin.balanceOf(acc0.address)
+    console.log('balance of stablecoins of lending pool', hexToInt(b11._hex, 16)/STABLECOIN_PRECISION)
 
 
 
