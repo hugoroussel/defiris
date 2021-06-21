@@ -34,7 +34,7 @@ function hexToInt(hexstring) {
 const STABLECOIN_PRECISION = 1e6
 
 describe("Aave", function() {
-  it("Should return the new greeting once it's changed", async function() {
+  it("Should run a simple aave mock example", async function() {
 
     // SETUP
     // ================================================================================================================================================================

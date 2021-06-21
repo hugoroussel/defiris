@@ -23,7 +23,7 @@ contract ABTokenMock is ERC20, ERC20Detailed {
     {
         dai = ERC20(_dai);
 
-        liquidityRate =  9 ** 26; // 10% APY
+        liquidityRate =  (9 ** 26); // 10% APY
         normalizedIncome = 10 ** 27;
     }
 

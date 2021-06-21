@@ -11,17 +11,26 @@ Bob has dai but would like to have his yield in usdc to get exposure on it
 Ultimately the idea would be to deposit asset into a contract and get yield from multiple pools : so you stake eth and receive dai, wbtc, bal etc..
 
 # What has been done
+
 1. Simulate the aave market => check test file in `aave-test.js`
 2. Simple unsafe 2 counter-parties based on the aave market
+3. Simple unsafe multiple counter-parties based on the aave market
 
 # Design choices
+
 The users send base assets DAI, ETH, USDC to the contract that then chooses a pool for them
 
 # To do 
 
-- [ ] Generalize the contract to multiple parties
+- [x] Generalize the contract to multiple parties
+- [ ] Add a second pool :)
+- [ ] Think about adding more assets/multiple assets by users
+- [ ] add a frontend 
+- [ ] add non stablecoin assets
+- [ ] Think about letting users withdraw at anytime
 - [ ] Add security features : safeMath, non Reentrancy, timeLocks etc..
 
+# "Maths"
 
 Concerning first to do : users should be able to send multiple assets and get their respective shares of the interest. 
 
@@ -53,7 +62,6 @@ For Alice 0.8*24O+0.8*30
 For Bob 0.1*240+0.1*30
 etc.
 
-=> Let's try to implement this example in particular. We should not have counterparties anymore :)
 
 
 

@@ -8,8 +8,8 @@ const { defineReadOnly } = require("ethers/lib/utils");
 // Constants
 const YEAR_IN_SEC = 31556952 // Number of seconds in a year
 
-const INTEREST_RATE = 1.1
 MINT_AMOUNT = 1000
+
 // Utilities
 
 YEARS = 3
