@@ -51,7 +51,7 @@ describe("Aave", function() {
     const ERC20Mock = await ethers.getContractFactory('ERC20Mock')
     const LendingPoolMock = await ethers.getContractFactory('LendingPoolMock')
     const LendingPoolAddressesProvider = await ethers.getContractFactory('LendingPoolAddressesProviderMock')
-    const Defiris = await ethers.getContractFactory('Defiris1')
+    const Defiris = await ethers.getContractFactory('DefirisAave')
 
     // Deploy stable coin one 
     let stablecoin1 = await ERC20Mock.deploy()
@@ -111,7 +111,7 @@ describe("Aave", function() {
     console.log('sc 2 amount of the second account', await getTokenBalance(stablecoin2, acc1))
 
     // 2. deploy defiris contract 
-    let defiris = await Defiris.deploy(stablecoin1.address, stablecoin2.address, lendingPool1.address, lendingPool2.address, aToken1.address, aToken2.address);
+    let defiris = await Defiris.deploy(1, 4000, stablecoin1.address, stablecoin2.address, lendingPool1.address, lendingPool2.address, aToken1.address, aToken2.address);
     console.log('defiris contract address', defiris.address);
     
     // 3. Each counterparty deposits stablecoins into the contract

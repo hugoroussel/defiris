@@ -23,12 +23,16 @@ The users send base assets DAI, ETH, USDC to the contract that then chooses a po
 # To do 
 
 - [x] Generalize the contract to multiple parties
-- [ ] Add a second pool :)
+- [x] Add a second pool :)
 - [ ] Think about adding more assets/multiple assets by users
 - [ ] add a frontend 
 - [ ] add non stablecoin assets
 - [ ] Think about letting users withdraw at anytime
 - [ ] Add security features : safeMath, non Reentrancy, timeLocks etc..
+
+# To do now
+- Add locking periods
+- Create contract for Compound
 
 # "Maths"
 

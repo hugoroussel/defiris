@@ -43,22 +43,23 @@ describe("Compound", function() {
     const ERC20Mock = await ethers.getContractFactory('ERC20Mock')
     const CERC20Mock = await ethers.getContractFactory('CERC20Mock')
 
-    // Deploy contracts
-
+    // Deploy stablecoin contract
     let stablecoin = await ERC20Mock.deploy()
     console.log('stablecoin address', stablecoin.address)
-
+    
+    // Deploy cToken contract (<=> lending pool in aave)
     let cToken = await CERC20Mock.deploy(stablecoin.address)
     console.log('cToken address', cToken.address)
 
     // Mint tokens
     const mintAmount = 1000 * STABLECOIN_PRECISION
+    // here we mint some tokens to the compoung lending pool
     await stablecoin.mint(cToken.address, mintAmount)
     await stablecoin.mint(acc0.address, mintAmount)
     await stablecoin.mint(acc1.address, mintAmount)
     await stablecoin.mint(acc2.address, mintAmount)
 
-    // mint cTokens
+    // Deposit into the lending pool by minting compound tokens
     await stablecoin.approve(cToken.address, mintAmount)
     await cToken.mint(mintAmount)
     console.log('account 1 stablecoin balance', await getTokenBalance(stablecoin, acc0))

@@ -4,13 +4,17 @@ pragma solidity ^0.5.17;
 import "hardhat/console.sol";
 import "../mocks/ATokenMock.sol";
 import "../mocks/LendingPoolMock.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Defiris1 {
+contract DefirisAave is ReentrancyGuard {
 
 
   mapping(address => address) assetToLendingPool;
 
+  // users
   address[] users;
+
+  // lending pools, interest tokens..
   address lendingPool1;
   address lendingPool2;
   address interestToken1;
@@ -18,14 +22,19 @@ contract Defiris1 {
   address stablecoin1;
   address stablecoin2;
 
+  // bookkeeping
   uint256 totalToken1;
   uint256 totalToken2;
   uint256 totalBalanceOfContract;
-
   mapping(address => uint256) balances;
   mapping(address => address) userToAsset;
 
+  uint endOfDepositTime;
+  uint endOfLockingPeriod;
+
   constructor(
+    uint depositPeriodInDays,
+    uint lockingPeriodInDays,
     address _stablecoin1, 
     address _stablecoin2,
     address _lendingPool1,
@@ -39,11 +48,19 @@ contract Defiris1 {
     lendingPool2 = _lendingPool2;
     interestToken1 = _interestToken1;
     interestToken2 = _interestToken2;
+
+    endOfDepositTime = now + depositPeriodInDays * 1 days;
+    endOfLockingPeriod = now + lockingPeriodInDays * 1 days;
+    
+    console.log(endOfDepositTime, endOfLockingPeriod);
   }
 
-  function depositToken1(address _asset, uint256 _amount) public payable {
-
+  // function only callable before the lock period starts
+  function depositToken1(address _asset, uint256 _amount) public payable nonReentrant {
+    require(now <= endOfDepositTime, "the deposit time has ended");
     require(_asset == stablecoin1, "wrong asset deposited!");
+
+    console.log("what is now", now);
 
     // TODO : security : check that the user was not here before using a mapping to avoid duplicates
     users.push(msg.sender);
@@ -62,8 +79,8 @@ contract Defiris1 {
     totalToken1 = totalToken1 + _amount;
   }
 
-  function depositToken2(address _asset, uint256 _amount) public payable {
-
+  function depositToken2(address _asset, uint256 _amount) public payable nonReentrant {
+    require(now <= endOfDepositTime, "the deposit time has ended");
     require(_asset == stablecoin2, "wrong asset deposited!");
 
     // TODO : security : check that the user was not here before using a mapping to avoid duplicates
@@ -83,8 +100,10 @@ contract Defiris1 {
     totalToken2 = totalToken2 + _amount;
   }
 
-  // withdraw at the end of the period removes for both counterparties
+  // withdraw at the end of the period removes for all counterparties
   function withdraw() public payable {
+    require(now > endOfDepositTime, "we are still in the deposit time");
+    require(now > endOfLockingPeriod, "the funds are still locked");
 
     // 1st get back the accrued interest in both pools
     ATokenMock atoken1 = ATokenMock(interestToken1);
@@ -119,10 +138,9 @@ contract Defiris1 {
       console.log("balance user deposited", balances[user]);
       console.log("totalBalance of contract", totalBalanceOfContract);
 
-
       token1.transfer(user, amountDueStableCoin1);
       token2.transfer(user, amountDueStableCoin2);
-      // what about the principal ???
+  
       ERC20 tokenPrincipal = ERC20(userToAsset[user]);
       tokenPrincipal.transfer(user, balances[user]);
     }
