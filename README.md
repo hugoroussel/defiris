@@ -31,8 +31,9 @@ The users send base assets DAI, ETH, USDC to the contract that then chooses a po
 - [ ] Add security features : safeMath, non Reentrancy, timeLocks etc..
 
 # To do now
-- Add locking periods
-- Create contract for Compound
+
+- [x] generalize for n assets by pool => done for compound
+- []  generalize for n assets by pool => done for aave
 
 # "Maths"
 

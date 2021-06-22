@@ -22,7 +22,7 @@ async function passTime(years) {
 
 
 describe("Compound", function() {
-  it("Should run a simple compound example", async function() {
+  it("Run the defiris example with n pools", async function() {
 
     async function getTokenBalance(token, account) {
         let b2 = await token.balanceOf(account.address)
@@ -43,19 +43,25 @@ describe("Compound", function() {
     // Get Contracts factories
     const ERC20Mock = await ethers.getContractFactory('ERC20Mock')
     const CERC20Mock = await ethers.getContractFactory('CERC20Mock')
-    const DefirisCompound = await ethers.getContractFactory('DefirisCompound')
+    const DefirisCompound = await ethers.getContractFactory('DefirisNCompound')
 
     // Deploy stablecoin contract
     let stablecoin1 = await ERC20Mock.deploy()
     console.log('stablecoin address', stablecoin1.address)
     let stablecoin2 = await ERC20Mock.deploy()
     console.log('stablecoin address', stablecoin2.address)
+    let stablecoin3 = await ERC20Mock.deploy()
+    console.log('stablecoin address', stablecoin3.address)
     
     // Deploy cToken contract (<=> lending pool in aave)
     let cToken1 = await CERC20Mock.deploy(stablecoin1.address)
     console.log('cToken address', cToken1.address)
+
     let cToken2 = await CERC20Mock.deploy(stablecoin2.address)
     console.log('cToken address', cToken2.address)
+
+    let cToken3 = await CERC20Mock.deploy(stablecoin3.address)
+    console.log('cToken address', cToken3.address)
 
     // Mint tokens
     const mintAmount = 1000 * STABLECOIN_PRECISION
@@ -69,68 +75,64 @@ describe("Compound", function() {
     // await stablecoin2.mint(acc0.address, mintAmount)
     await stablecoin2.mint(acc1.address, mintAmount)
 
+    await stablecoin3.mint(cToken3.address, mintAmount)
+    // await stablecoin2.mint(acc0.address, mintAmount)
+    await stablecoin3.mint(acc2.address, mintAmount)
+
     // Deploy DefirisCompound contract
-    const defiris = await DefirisCompound.deploy(1, 730, stablecoin1.address, stablecoin2.address, cToken1.address, cToken2.address)
+    const defiris = await DefirisCompound.deploy(
+        [stablecoin1.address, stablecoin2.address, stablecoin3.address],
+        [cToken1.address, cToken2.address, cToken3.address],
+        )
     console.log('address of defiris compound contract', defiris.address)
 
     // ================================================================================================================================================================
 
-    // acc0 deposits funds into the contract
     await stablecoin1.approve(defiris.address, mintAmount)
-    await defiris.depositToken1(stablecoin1.address, mintAmount)
+    await defiris.deposit(stablecoin1.address, mintAmount)
 
-    // check the accounts
-    console.log('balance of cToken contract with stablecoins', await getTokenBalance(stablecoin1, cToken1))
-    console.log('balance of acc0 with stablecoins', await getTokenBalance(stablecoin1, acc0))
-    console.log('balance of defiris contract', await getTokenBalance(cToken1, defiris))
-
-    // acc2 deposits funds into the contract too 
     await stablecoin2.connect(acc1).approve(defiris.address, mintAmount)
-    await defiris.connect(acc1).depositToken2(stablecoin2.address, mintAmount)
+    await defiris.connect(acc1).deposit(stablecoin2.address, mintAmount)
+    
+    await stablecoin3.connect(acc2).approve(defiris.address, mintAmount)
+    await defiris.connect(acc2).deposit(stablecoin3.address, mintAmount)
 
-    // check the accounts
-    console.log('balance of cToken contract with stablecoins', await getTokenBalance(stablecoin2, cToken2))
-    console.log('balance of acc1 with stablecoins', await getTokenBalance(stablecoin2, acc1))
-    console.log('balance of defiris contract', await getTokenBalance(cToken2, defiris))
-
-    // let the time pass
+    // Pass time and gain some interest
     YEARS = 3
-    passTime(YEARS)
+    passTime(YEARS)     
 
-    // Some operations for changing the rate
+
     const currentExRate = await cToken1.exchangeRateStored();
     const currentExRateInt = hexToInt(currentExRate._hex)
-    console.log('current ex rate', currentExRateInt)
-
-    // modify manually the exchange rate of the mocked tokens
     const rateAfterTimePasses = currentExRateInt *(1 + YEARS * INIT_INTEREST_RATE)
-    console.log('rateAfterTimePasses', rateAfterTimePasses)
     await cToken1._setExchangeRateStored(rateAfterTimePasses)
     await cToken2._setExchangeRateStored(rateAfterTimePasses)
-    let rate = await cToken2.exchangeRateStored()
-
-
-
-
-    
-    console.log('is the rate stored', hexToInt(rate._hex))
-    console.log('balance of acc0 contract for sc1', await getTokenBalance(stablecoin1, acc0))
-
-    console.log('balance of defiris contract for sc1', await getTokenBalance(stablecoin1, defiris))
-    console.log('balance of defiris contract for sc2', await getTokenBalance(stablecoin2, defiris))
-    console.log('balance of acc0 contract for sc1', await getTokenBalance(stablecoin1, acc0))
-    console.log('balance of acc0 contract for sc2', await getTokenBalance(stablecoin2, acc0))
-    console.log('balance of acc1 contract for sc1', await getTokenBalance(stablecoin1, acc1))
-    console.log('balance of acc1 contract for sc2', await getTokenBalance(stablecoin2, acc1))
-
+    await cToken3._setExchangeRateStored(rateAfterTimePasses)
     await defiris.withdraw()
 
-    console.log('balance of defiris contract for sc1', await getTokenBalance(stablecoin1, defiris))
-    console.log('balance of defiris contract for sc2', await getTokenBalance(stablecoin2, defiris))
-    console.log('balance of acc0 contract for sc1', await getTokenBalance(stablecoin1, acc0))
-    console.log('balance of acc0 contract for sc2', await getTokenBalance(stablecoin2, acc0))
-    console.log('balance of acc1 contract for sc1', await getTokenBalance(stablecoin1, acc1))
-    console.log('balance of acc1 contract for sc2', await getTokenBalance(stablecoin2, acc1))
+
+
+
+
+    console.log('balance of contract', await getTokenBalance(stablecoin1, defiris))
+    console.log('balance of contract', await getTokenBalance(stablecoin2, defiris))
+    console.log('balance of contract', await getTokenBalance(stablecoin3, defiris))
+
+
+    console.log('balance of account 0', await getTokenBalance(stablecoin1, acc0))
+    console.log('balance of account 0', await getTokenBalance(stablecoin2, acc0))
+    console.log('balance of account 0', await getTokenBalance(stablecoin3, acc0))
+
+    console.log('balance of account 1', await getTokenBalance(stablecoin1, acc1))
+    console.log('balance of account 1', await getTokenBalance(stablecoin2, acc1))
+    console.log('balance of account 1', await getTokenBalance(stablecoin3, acc1))
+
+    console.log('balance of account 2', await getTokenBalance(stablecoin1, acc2))
+    console.log('balance of account 2', await getTokenBalance(stablecoin2, acc2))
+    console.log('balance of account 2', await getTokenBalance(stablecoin3, acc2))
+
+
+
 
 
 
