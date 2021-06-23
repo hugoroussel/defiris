@@ -14,13 +14,13 @@ DEPOSIT_AMOUNT = 1000
 
 
 
-async function passTime(years, aToken) {
-    const time = Date.now() + YEAR_IN_SEC * years
-    await ethers.provider.send('evm_setNextBlockTimestamp', [time]); 
-    await ethers.provider.send('evm_mine');
-    await aToken.mintInterest(num2str(YEAR_IN_SEC*years))
-    console.log(years, ' years have passed..')
+async function passTime(years) {
+  const time = Date.now() + YEAR_IN_SEC * years
+  await ethers.provider.send('evm_setNextBlockTimestamp', [time]); 
+  await ethers.provider.send('evm_mine');
+  console.log(years, ' years have passed..')
 }
+
 
 // Converts a JS number into a string that doesn't use scientific notation
 function num2str(num) {
@@ -97,6 +97,8 @@ describe("Aave", function() {
     await passTime(YEARS, aToken)
     console.log('balance of interest gaining stablecoins of account 0', await getTokenBalance(aToken, acc0))
 
+    await aToken.mintInterest(YEAR_IN_SEC*3)
+    
     // 4. Withdraw the principal + interest
     balance = await getTokenBalance(aToken, acc0)
     await lendingPool.withdraw(stablecoin.address, balance*STABLECOIN_PRECISION, acc0.address)

@@ -33,7 +33,10 @@ The users send base assets DAI, ETH, USDC to the contract that then chooses a po
 # To do now
 
 - [x] generalize for n assets by pool => done for compound
-- []  generalize for n assets by pool => done for aave
+- [ ]  generalize for n assets by pool => done for aave
+- [ ]  integrate 88mph
+- [ ]  How to compute total balance for non stablecoins assets?
+- [ ]  How to handle an user using multiple pools?
 
 # "Maths"
 
