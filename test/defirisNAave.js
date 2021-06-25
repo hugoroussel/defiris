@@ -96,7 +96,6 @@ describe("NAave", function() {
         [stablecoin1.address, stablecoin2.address, stablecoin3.address],
         [lendingPool1.address, lendingPool2.address, lendingPool3.address],
         [aToken1.address, aToken2.address, aToken3.address],
-
     )
 
     console.log('defiris address', defiris.address)

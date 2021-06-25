@@ -18,5 +18,13 @@ task("accounts", "Prints the list of accounts", async () => {
  */
 module.exports = {
   solidity: "0.5.17",
+  networks: {
+    hardhat: {
+      gas: 12000000,
+      blockGasLimit: 0x1fffffffffffff,
+      allowUnlimitedContractSize: true,
+      timeout: 1800000
+    },
+  },
 };
 
