@@ -65,7 +65,8 @@ describe("88mph", function() {
         
     }
 
-    // SETUP
+    // ================================================================================================================================================================
+    // 88mph SETUP
     // ================================================================================================================================================================
 
     // Setup accounts
@@ -125,20 +126,17 @@ describe("88mph", function() {
     // Initialize the money market
     let market = await AaveMarket.deploy(lendingPoolAddressesProvider.address, aToken.address, stablecoin.address)
 
-    
     // Initialize the NFTs
     const nftTemplate = await NFT.deploy()
     nftFactory = await NFTFactory.deploy(nftTemplate.address)
     const depositNFTReceipt = await nftFactory.createClone('88mph Deposit', '88mph-Deposit')
     const fundingNFTReceipt = await nftFactory.createClone('88mph Funding', '88mph-Funding')
     
-
     let logs = await ethers.provider.getLogs({
       fromBlock: 0,
       toBlock: "latest",
       address: nftFactory.address
     })
-    
     
    let firstAddress = logs[0].data.replace("0x000000000000000000000000", "0x")
    let secondAddress = logs[1].data.replace("0x000000000000000000000000", "0x")
@@ -180,7 +178,6 @@ describe("88mph", function() {
     await mphIssuanceModel.setPoolDepositorRewardVestPeriod(dInterestPool.address, PoolDepositorRewardVestPeriod)
     await mphIssuanceModel.setPoolFunderRewardVestPeriod(dInterestPool.address, PoolFunderRewardVestPeriod)
 
-
     // Transfer the ownership of the money market to the DInterest pool
     await market.transferOwnership(dInterestPool.address)
 
@@ -188,14 +185,71 @@ describe("88mph", function() {
     await depositNFT.transferOwnership(dInterestPool.address)
     await fundingNFT.transferOwnership(dInterestPool.address)
 
-    await stablecoin.approve(dInterestPool.address, mintAmount)    
+    // ================================================================================================================================================================
+    // Compound SETUP
+    // ================================================================================================================================================================
+    
+    // Get Contracts factories
+    const CERC20Mock = await ethers.getContractFactory('CERC20Mock')
+
+    // Deploy stablecoin contract
+    let stablecoin1 = await ERC20Mock.deploy()
+    console.log('stablecoin address', stablecoin1.address)
+
+    stablecoin1.mint(acc1.address, mintAmount)
+    
+    // Deploy cToken contract (<=> lending pool in aave)
+    let cToken = await CERC20Mock.deploy(stablecoin1.address)
+    console.log('cToken address', cToken.address)
+
+    // ================================================================================================================================================================
+    // Defiris SETUP
+    // ================================================================================================================================================================
+
+    const DefirisN88mphAaveDCompound = await ethers.getContractFactory('DefirisN88mphAaveDCompound')
+
+    let maturation = await getBlockTimeStamp() + MaxDepositPeriod
+
+    let defiris = await DefirisN88mphAaveDCompound.deploy(
+            stablecoin1.address,
+            cToken.address,
+            stablecoin.address,
+            dInterestPool.address,
+            vesting.address,
+            mphMinter.address,
+            mph.address,
+            maturation
+    )
+    console.log("defiris address", defiris.address)
+    
+    // ================================================================================================================================================================
+    // Tests
+    // ================================================================================================================================================================
+
+    console.log('before depositing', await getTokenBalance(stablecoin, lendingPool))
+
+    await stablecoin.approve(defiris.address, mintAmount)    
+    await defiris.depositFixed(mintAmount);
+
+    //await stablecoin1.connect(acc1).approve(defiris.address, mintAmount)
+    //await defiris.connect(acc1).depositVariable(mintAmount)
+
+    await passTime(3)
+    await aToken.mintInterest(num2str(YEAR_IN_SEC*3))
+
+    //MPHToken.approve(mphminter.address, _mintAmount);
+    //await vesting.withdrawVested(acc0.address, 0)
+    await defiris.withdraw(mintAmount);
+
+
+
+
+    /*
     await dInterestPool.deposit(mintAmount, await getBlockTimeStamp()+MaxDepositPeriod)
 
-    console.log(await getTokenBalance(stablecoin, acc0))
-    console.log(await getTokenBalance(stablecoin, lendingPool))
+    console.log('after depositing', await getTokenBalance(stablecoin, lendingPool))
 
     let depositID = await dInterestPool.depositsLength(); // the ID of the deposit
-    console.log(hexToInt(depositID._hex))
 
     await passTime(3)
     await aToken.mintInterest(num2str(YEAR_IN_SEC*3))
@@ -205,18 +259,11 @@ describe("88mph", function() {
 
     console.log(await getTokenBalance(stablecoin, acc0))
 
-
-
-    
-
+    */
 
 
 
 
-
-
-    
- 
 
 
   });
