@@ -195,12 +195,13 @@ describe("88mph", function() {
     // Deploy stablecoin contract
     let stablecoin1 = await ERC20Mock.deploy()
     console.log('stablecoin address', stablecoin1.address)
-
-    stablecoin1.mint(acc1.address, mintAmount)
     
     // Deploy cToken contract (<=> lending pool in aave)
     let cToken = await CERC20Mock.deploy(stablecoin1.address)
     console.log('cToken address', cToken.address)
+    
+    stablecoin1.mint(acc1.address, mintAmount)
+    stablecoin1.mint(cToken.address, mintAmount)
 
     // ================================================================================================================================================================
     // Defiris SETUP
@@ -227,19 +228,41 @@ describe("88mph", function() {
     // ================================================================================================================================================================
 
     console.log('before depositing', await getTokenBalance(stablecoin, lendingPool))
+    
 
+    // We first deposit into the fixed pool with the account 0
     await stablecoin.approve(defiris.address, mintAmount)    
     await defiris.depositFixed(mintAmount);
 
-    //await stablecoin1.connect(acc1).approve(defiris.address, mintAmount)
-    //await defiris.connect(acc1).depositVariable(mintAmount)
+    // We then deposit into the variable pool with the account 1
+    await stablecoin1.connect(acc1).approve(defiris.address, mintAmount)
+    await defiris.connect(acc1).depositVariable(mintAmount)
 
     await passTime(3)
-    await aToken.mintInterest(num2str(YEAR_IN_SEC*3))
 
-    //MPHToken.approve(mphminter.address, _mintAmount);
-    //await vesting.withdrawVested(acc0.address, 0)
-    await defiris.withdraw(mintAmount);
+    // set rate aave
+    await aToken.mintInterest(num2str(YEAR_IN_SEC*3))
+    
+    // set rate compound
+    const currentExRate = await cToken.exchangeRateStored();
+    const currentExRateInt = hexToInt(currentExRate._hex)
+    const rateAfterTimePasses = currentExRate *(1 + 3 * INIT_INTEREST_RATE)
+    console.log('rateAfterTimePasses', rateAfterTimePasses)
+    await cToken._setExchangeRateStored(rateAfterTimePasses)
+    
+    
+    await defiris.withdraw();
+
+
+    console.log("account 0", await getTokenBalance(stablecoin, acc0))
+    console.log("account 1", await getTokenBalance(stablecoin, acc1))
+
+
+    console.log("account 0", await getTokenBalance(stablecoin1, acc0))
+    console.log("account 1", await getTokenBalance(stablecoin1, acc1))
+
+    console.log("account 0", await getTokenBalance(stablecoin, defiris))
+    console.log("account 1", await getTokenBalance(stablecoin1, defiris))
 
 
 
