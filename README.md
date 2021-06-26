@@ -38,6 +38,7 @@ The users send base assets DAI, ETH, USDC to the contract that then chooses a po
 - [x]  integrate 88mph
 - [x]  simple first step => interest versus floating 88mph versus Aave
 - [ ]  nice proof of concept/draft => create actual contracts, also the withdraw method should be callable by each user and not someone random paying ton of gas..
+- [ ]  handle mph token rewards
 - [ ]  clean up the repo even for a hackathon it's embarassing..
 - [ ]  How to compute total balance for non stablecoins assets?
 

@@ -2,11 +2,11 @@
 pragma solidity ^0.5.17;
 
 import "hardhat/console.sol";
-import "../mocks/CERC20Mock.sol";
+import "../../mocks/ATokenMock.sol";
+import "../../mocks/LendingPoolMock.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
-contract DefirisNCompound is ReentrancyGuard {
+contract DefirisNAave is ReentrancyGuard {
 
   // users
   address[] users;
@@ -17,18 +17,22 @@ contract DefirisNCompound is ReentrancyGuard {
   mapping(address => address) lendingPoolToAsset;
   mapping(address => uint256) totalByAsset;
   mapping(address => uint256) rates;
+  mapping(address => bool) isUser;
 
   uint256 totalBalanceOfContract;
 
   address[] assets;
   address[] lendingPools;
+  address[] aTokens;
 
   constructor(
     address[] memory _assets, 
-    address[] memory _lendingPools
+    address[] memory _lendingPools,
+    address[] memory _aTokens
     ) public {    
         assets = _assets;
         lendingPools = _lendingPools;
+        aTokens = _aTokens;
         for(uint256 i = 0; i < _assets.length; i++) {
             address asset = _assets[i];
             address lp = _lendingPools[i];
@@ -38,62 +42,59 @@ contract DefirisNCompound is ReentrancyGuard {
     }
 
     function deposit(address _asset, uint256 _amount) public nonReentrant {
-        // First deposit the user asset into the given strategy
         require(userToAsset[msg.sender] == address(0), "You already have deposited into another pool");
+        // First find the lending pool that corresponds to the asset
         address lendingPoolAddress = assetToLendingPool[_asset];
-        CERC20Mock cToken = CERC20Mock(lendingPoolAddress);
+        LendingPoolMock lp = LendingPoolMock(lendingPoolAddress);
 
+        // Then instantiate the token and transfer it to the lending pool
         ERC20 token = ERC20(_asset);
-        console.log("stablecoin", _asset);
         token.transferFrom(msg.sender, address(this), _amount);
         token.approve(lendingPoolAddress, _amount);
+        lp.deposit(_asset, _amount, address(this), 0);
 
-        cToken.mint(_amount);
-
-        // Register the user
+        // Record the user
         users.push(msg.sender);
         userToAsset[msg.sender] = _asset;
 
         // Book keeping
-        rates[_asset] = cToken.exchangeRateStored();
         balances[msg.sender] = _amount;
         totalBalanceOfContract += _amount;
         totalByAsset[_asset] += _amount;
     }
 
-    function withdraw() public nonReentrant {
+
+    function withdraw() public {
+
 
         for (uint256 i = 0; i < lendingPools.length; i++) {
             address lendingPoolAddress = lendingPools[i];
             address asset = assets[i];
-            CERC20Mock cToken = CERC20Mock(lendingPoolAddress);
+            address aTokenAddress = aTokens[i];
+
+            ATokenMock aToken = ATokenMock(aTokenAddress);
+            LendingPoolMock lp = LendingPoolMock(lendingPoolAddress);
             ERC20 token = ERC20(asset);
-            uint256 currentRate = cToken.exchangeRateStored();
-            uint256 oldRate = rates[asset];
-            uint256 totalAsset = totalByAsset[asset];
-            console.log(currentRate, oldRate, totalAsset);
-            cToken.redeemUnderlying((currentRate*totalAsset)/oldRate);
-            uint256 totalWithInterest = token.balanceOf(address(this));
-            uint256 interestOnly = totalWithInterest - totalAsset;
+
+            uint256 totalInitialBalanceOfPool = totalByAsset[asset];
+            uint256 balanceWithInterest = aToken.balanceOf(address(this));
+            
+            uint256 totalInterestAccrued = balanceWithInterest - totalInitialBalanceOfPool;
+            lp.withdraw(asset, balanceWithInterest, address(this));
+            
             for (uint256 i = 0; i < users.length; i++) {
                 address user = users[i];
-                uint256 amountDue = (interestOnly*balances[user]/totalBalanceOfContract);
-                token.transfer(user, amountDue);
+                console.log((totalInterestAccrued*balances[user])/totalBalanceOfContract);
+                token.transfer(user, (totalInterestAccrued*balances[user])/totalBalanceOfContract);
             }
         }
 
         for (uint256 i = 0; i < users.length; i++) {
-                address user = users[i];
-                ERC20 token = ERC20(userToAsset[user]);
-                token.transfer(user, balances[user]);
+            address user = users[i];
+            ERC20 token = ERC20(userToAsset[user]);
+            token.transfer(user, balances[user]);
         }
 
-
-
-        
-
     }
-
-
 
 }

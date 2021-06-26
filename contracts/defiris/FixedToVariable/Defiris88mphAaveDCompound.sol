@@ -3,14 +3,13 @@ pragma solidity ^0.5.17;
 pragma experimental ABIEncoderV2;
 
 import "hardhat/console.sol";
-import "../mocks/ATokenMock.sol";
-import "../DInterest.sol";
-import "../mocks/LendingPoolMock.sol";
-import "../mocks/CERC20Mock.sol";
-import "../rewards/Vesting.sol";
+import "../../mocks/ATokenMock.sol";
+import "../../DInterest.sol";
+import "../../mocks/LendingPoolMock.sol";
+import "../../mocks/CERC20Mock.sol";
+import "../../rewards/Vesting.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
-import "hardhat/console.sol";
 
 contract DefirisN88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
 
@@ -96,7 +95,6 @@ contract DefirisN88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
     }
 
     function withdraw() public { 
-
         // Withdraw from the fixed pool
         uint totalSupply = MPHToken.totalSupply();
         MPHToken.approve(address(mphminter), totalSupply);
