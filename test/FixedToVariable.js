@@ -255,37 +255,10 @@ describe("88mph", function() {
 
     console.log("account 0", await getTokenBalance(stablecoin, acc0))
     console.log("account 1", await getTokenBalance(stablecoin, acc1))
-
     console.log("account 0", await getTokenBalance(stablecoin1, acc0))
     console.log("account 1", await getTokenBalance(stablecoin1, acc1))
-
     console.log("account 0", await getTokenBalance(stablecoin, defiris))
     console.log("account 1", await getTokenBalance(stablecoin1, defiris))
-
-
-
-
-    /*
-    await dInterestPool.deposit(mintAmount, await getBlockTimeStamp()+MaxDepositPeriod)
-
-    console.log('after depositing', await getTokenBalance(stablecoin, lendingPool))
-
-    let depositID = await dInterestPool.depositsLength(); // the ID of the deposit
-
-    await passTime(3)
-    await aToken.mintInterest(num2str(YEAR_IN_SEC*3))
-
-    await vesting.withdrawVested(acc0.address, 0)
-    await dInterestPool.withdraw(1, 0)
-
-    console.log(await getTokenBalance(stablecoin, acc0))
-
-    */
-
-
-
-
-
 
   });
 });

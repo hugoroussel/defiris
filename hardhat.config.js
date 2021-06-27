@@ -20,11 +20,19 @@ module.exports = {
   solidity: "0.5.17",
   networks: {
     hardhat: {
+      chainId: 31337,
+      loggingEnabled : true,
       gas: 12000000,
       blockGasLimit: 0x1fffffffffffff,
       allowUnlimitedContractSize: true,
       timeout: 1800000
     },
+  },
+  abiExporter: {
+    path: './data/abi',
+    clear: true,
+    flat: true,
+    spacing: 2
   },
 };
 

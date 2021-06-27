@@ -38,41 +38,20 @@ The users send base assets DAI, ETH, USDC to the contract that then chooses a po
 - [x]  integrate 88mph
 - [x]  simple first step => interest versus floating 88mph versus Aave
 - [ ]  nice proof of concept/draft => create actual contracts, also the withdraw method should be callable by each user and not someone random paying ton of gas..
+- [ ]  create getters for the frontend
+- [ ]  start to think about a demo
 - [ ]  handle mph token rewards
 - [ ]  clean up the repo even for a hackathon it's embarassing..
 - [ ]  How to compute total balance for non stablecoins assets?
 
-# "Maths"
+# Local development 
 
-Concerning first to do : users should be able to send multiple assets and get their respective shares of the interest. 
+run 
+`npx hardhat node`
 
-Let's say we have one pool with 10% APY  USDT and one with 5% APY DAI
+run your scripts without forgetting to add 
+`--network localhost`
 
-Alice drops 800 USDT
-Bob drops 100 DAI
-Charles drops 100 DAI
-
-After three years :
-
-We have in the pool 
-
-1040 aUSDT
-115 aDAI
-115 aDAI
-
-total interest : 
-240 USDT
-15+15 = 30 DAI
-Since Alice contributed to 80% of the pool initially and the others to 10% each we should have 
-
-0.8*270 = 216 going to Alice 
-0.1*270 = 27 going to Bob
-0.1*270 = 27 going to Charles
-
-We just split the interest on each asset by the % of the pool you own i.e
-For Alice 0.8*24O+0.8*30
-For Bob 0.1*240+0.1*30
-etc.
 
 
 
