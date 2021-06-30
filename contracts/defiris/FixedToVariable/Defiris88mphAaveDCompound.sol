@@ -60,7 +60,6 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
 
     function depositFixed(uint256 _amount) public {
         require(userToAsset[msg.sender] == address(0), "user already deposited");
-
         // First deposit the token into the fixed interest pool
         fixedToken.transferFrom(msg.sender, address(this), _amount);
         fixedToken.approve(address(fixedPool), _amount);

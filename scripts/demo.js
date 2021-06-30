@@ -91,6 +91,7 @@ async function getBlockTimeStamp(){
     let stablecoin = await ERC20Mock.deploy()
     console.log('stablecoin 88mph address', stablecoin.address)
     let aToken = await ATokenMock.deploy(stablecoin.address)
+    console.log('atoken address', aToken.address)
     let lendingPool = await LendingPoolMock.deploy()
     await lendingPool.setReserveAToken(stablecoin.address, aToken.address)
     let lendingPoolAddressesProvider = await LendingPoolAddressesProvider.deploy()
