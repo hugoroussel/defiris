@@ -11,7 +11,7 @@ import "../../rewards/Vesting.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 
-contract DefirisN88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
+contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
 
     mapping(address => address) assetToPool;
     mapping(address => uint256) userToDepositID;

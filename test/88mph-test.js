@@ -195,15 +195,13 @@ describe("88mph", function() {
     console.log(await getTokenBalance(stablecoin, lendingPool))
 
     let depositID = await dInterestPool.depositsLength(); // the ID of the deposit
-    console.log(hexToInt(depositID._hex))
-
+  
     await passTime(3)
     await aToken.mintInterest(num2str(YEAR_IN_SEC*3))
-
     await vesting.withdrawVested(acc0.address, 0)
     await dInterestPool.withdraw(1, 0)
-
     console.log(await getTokenBalance(stablecoin, acc0))
+
 
 
 

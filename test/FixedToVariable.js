@@ -6,7 +6,7 @@ const { checkProperties } = require("ethers/lib/utils");
 // Constants
 const STABLECOIN_PRECISION = 1e6
 const MINT_AMOUNT = 1000
-const INIT_INTEREST_RATE = 0.1 // 10% APY
+const INIT_INTEREST_RATE = 0.1 // 5% APY
 const YEAR_IN_SEC = 31556952 // Number of seconds in a year
 // Constants
 const PRECISION = 1e18
@@ -207,7 +207,7 @@ describe("88mph", function() {
     // Defiris SETUP
     // ================================================================================================================================================================
 
-    const DefirisN88mphAaveDCompound = await ethers.getContractFactory('DefirisN88mphAaveDCompound')
+    const DefirisN88mphAaveDCompound = await ethers.getContractFactory('Defiris88mphAaveDCompound')
 
     let maturation = await getBlockTimeStamp() + MaxDepositPeriod
 
@@ -238,6 +238,7 @@ describe("88mph", function() {
     await stablecoin1.connect(acc1).approve(defiris.address, mintAmount)
     await defiris.connect(acc1).depositVariable(mintAmount)
 
+    // .. All of this needs to be done during the time pass
     await passTime(3)
 
     // set rate aave
@@ -249,7 +250,7 @@ describe("88mph", function() {
     const rateAfterTimePasses = currentExRate *(1 + 3 * INIT_INTEREST_RATE)
     console.log('rateAfterTimePasses', rateAfterTimePasses)
     await cToken._setExchangeRateStored(rateAfterTimePasses)
-    
+    // until here ...
     
     await defiris.withdraw();
 
