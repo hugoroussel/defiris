@@ -17,9 +17,12 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
     mapping(address => uint256) userToDepositID;
     mapping(address => address) userToAsset;
 
+    bool withdrawalInitiated = false;
+
     uint256 MaturationTime;
 
     address[] users;
+    uint256[] depositIDs;
 
     ERC20 fixedToken;
     ERC20 variableToken;
@@ -32,8 +35,10 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
     uint256 totalBalanceOfContract;
     uint256 totalFixed;
     uint256 totalVariable;
-
     uint256 lastVariableRate;
+
+    uint256 TotalInterestGainedFromFixedPool;
+    uint256 TotalInterestGainedFromVariablePool;
 
     mapping(address => uint256) userBalances;
 
@@ -58,7 +63,8 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
         lastVariableRate = cToken.exchangeRateCurrent();
     }
 
-    function depositFixed(uint256 _amount) public {
+    // deposits into the fixed pools strategies
+    function depositFixed(uint256 _amount) public nonReentrant{
         require(userToAsset[msg.sender] == address(0), "user already deposited");
         // First deposit the token into the fixed interest pool
         fixedToken.transferFrom(msg.sender, address(this), _amount);
@@ -68,14 +74,19 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
         // Perform bookeping
         users.push(msg.sender);
         uint256 depositID = fixedPool.depositsLength();
+
+        depositIDs.push(depositID);
         userToDepositID[msg.sender] = depositID;
+
+
         userBalances[msg.sender] = _amount;
         userToAsset[msg.sender] = address(fixedToken);
         totalFixed += _amount;
         totalBalanceOfContract += _amount;
     }
 
-    function depositVariable(uint256 _amount) public {
+    // deposits into the variable pools strategies
+    function depositVariable(uint256 _amount) public nonReentrant {
         require(userToAsset[msg.sender] == address(0), "user already deposited");
 
         // First deposit the token into the variable interest pool
@@ -93,43 +104,54 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
         lastVariableRate = cToken.exchangeRateStored();
     }
 
-    function withdraw() public { 
-        // Withdraw from the fixed pool
-        uint totalSupply = MPHToken.totalSupply();
-        MPHToken.approve(address(mphminter), totalSupply);
-        vesting.withdrawVested(address(this), 0);
-        fixedPool.withdraw(1, 0);
+    // withdraw 
+    function withdraw() public nonReentrant { 
+        require(userBalances[msg.sender] > 0, "user did not deposit");
 
-        // Book keeping for fixed
-        uint256 WithdrawnedFromFixedPool = fixedToken.balanceOf(address(this));
-        uint256 TotalInterestGainedFromFixedPool = WithdrawnedFromFixedPool - totalFixed;
+        // The first user initiating the withdrawal will initiate withdrawal from the different pools
+        if (!withdrawalInitiated) {
+            // Withdraw from the fixed pool
+            uint totalSupply = MPHToken.totalSupply();
+            MPHToken.approve(address(mphminter), totalSupply);
+            vesting.withdrawVested(address(this), 0);
 
-        // Withdraw from the variable pool
-        uint256 currentRate = cToken.exchangeRateStored();
-        cToken.redeemUnderlying((currentRate*totalVariable)/lastVariableRate);
-
-        // Book keeping for variable pool
-        uint256 WithdrawnedFromVariablePool = variableToken.balanceOf(address(this));
-        uint256 TotalInterestGainedFromVariablePool = WithdrawnedFromVariablePool - totalVariable;
-
-        for (uint256 i = 0; i < users.length; i++) {
-            address user = users[i];
-            uint256 amountDueFixed = (TotalInterestGainedFromFixedPool*userBalances[user]/totalBalanceOfContract);
-            fixedToken.transfer(user, amountDueFixed);
-
-            uint256 amountDueVariable = (TotalInterestGainedFromVariablePool*userBalances[user]/totalBalanceOfContract);
-            variableToken.transfer(user, amountDueVariable);
-
-            // withdraw principal from fixed
-            if (userToAsset[user] == address(fixedToken)) {
-                fixedToken.transfer(user, userBalances[user]);
+            // withdraw from the fixed pool for the different deposit ids
+            for(uint256 i = 0; i < depositIDs.length; i++) {
+                fixedPool.withdraw(depositIDs[i], 0);
             }
-            
-            // withdraw principal from variable
-            if (userToAsset[user] == address(variableToken)) {
-                variableToken.transfer(user, userBalances[user]);
-            }
+
+            // Book keeping for fixed
+            uint256 WithdrawnedFromFixedPool = fixedToken.balanceOf(address(this));
+            TotalInterestGainedFromFixedPool = WithdrawnedFromFixedPool - totalFixed;
+
+            // Withdraw from the variable pool
+            uint256 currentRate = cToken.exchangeRateStored();
+            cToken.redeemUnderlying((currentRate*totalVariable)/lastVariableRate);
+
+            // Book keeping for variable pool
+            uint256 WithdrawnedFromVariablePool = variableToken.balanceOf(address(this));
+            TotalInterestGainedFromVariablePool = WithdrawnedFromVariablePool - totalVariable;
+
+            // the withdrawal was correctly finished
+            withdrawalInitiated = true;
         }
+      
+        address user = msg.sender;
+
+        // Compute and send the amount due for the fixed interest rate
+        uint256 amountDueFixed = (TotalInterestGainedFromFixedPool*userBalances[user]/totalBalanceOfContract);
+        fixedToken.transfer(user, amountDueFixed);
+
+        // Compute and send the amount due for the variable interest rate
+        uint256 amountDueVariable = (TotalInterestGainedFromVariablePool*userBalances[user]/totalBalanceOfContract);
+        variableToken.transfer(user, amountDueVariable);
+
+        // Send back withdrawal principal
+        ERC20 principalToken = ERC20(userToAsset[user]);
+        principalToken.transfer(user, userBalances[user]);
+
+        // Update user balance
+        userBalances[user] = 0;
     }
 
 

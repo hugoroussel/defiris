@@ -253,6 +253,7 @@ describe("88mph", function() {
     // until here ...
     
     await defiris.withdraw();
+    await defiris.connect(acc1).withdraw();
 
     console.log("account 0", await getTokenBalance(stablecoin, acc0))
     console.log("account 1", await getTokenBalance(stablecoin, acc1))
