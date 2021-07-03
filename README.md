@@ -31,7 +31,7 @@ These are experimental contracts made during a hackathon please do not use in pr
 4. Fixed to variable contract Aave based 88mph contract with Compound => check contract in `/contracts/defiris/FixedToVariable/Defiris88mphAaveDCompound.sol`
 5. Variable to variable for Aave and Compound => check contracts in `/contracts/defiris/VariableToVariable/*.sol`
 
-[I'm an inline-style link](https://github.com/hugoroussel/defiris-frontend)
+[Defiris-Frontend](https://github.com/hugoroussel/defiris-frontend)
 
 # To do 
 
