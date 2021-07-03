@@ -21,7 +21,6 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
 
     uint256 MaturationTime;
 
-    address[] users;
     uint256[] depositIDs;
 
     ERC20 fixedToken;
@@ -72,7 +71,6 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
         fixedPool.deposit(_amount, MaturationTime);
 
         // Perform bookeping
-        users.push(msg.sender);
         uint256 depositID = fixedPool.depositsLength();
 
         depositIDs.push(depositID);
@@ -95,7 +93,6 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
         cToken.mint(_amount);
 
         // Perform some book keeping
-        users.push(msg.sender);
         userBalances[msg.sender] = _amount;
         userToAsset[msg.sender] = address(variableToken);
         totalBalanceOfContract += _amount;

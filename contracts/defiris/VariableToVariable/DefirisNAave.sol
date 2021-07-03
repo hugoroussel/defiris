@@ -14,35 +14,58 @@ contract DefirisNAave is ReentrancyGuard {
   mapping(address => uint256) balances;
   mapping(address => address) userToAsset;
   mapping(address => address) assetToLendingPool;
-  mapping(address => address) lendingPoolToAsset;
   mapping(address => uint256) totalByAsset;
-  mapping(address => uint256) rates;
-  mapping(address => bool) isUser;
 
   uint256 totalBalanceOfContract;
 
   address[] assets;
   address[] lendingPools;
   address[] aTokens;
+  uint256[] totalInterestAccruedPerPool;
+  uint256 totalInterestAccrued = 0;
 
-  constructor(
-    address[] memory _assets, 
-    address[] memory _lendingPools,
-    address[] memory _aTokens
-    ) public {    
+  bool withdrawInitiated = false;
+
+    constructor(
+        address[] memory _assets, 
+        address[] memory _lendingPools,
+        address[] memory _aTokens
+    ) public 
+    {    
         assets = _assets;
         lendingPools = _lendingPools;
         aTokens = _aTokens;
         for(uint256 i = 0; i < _assets.length; i++) {
-            address asset = _assets[i];
-            address lp = _lendingPools[i];
-            assetToLendingPool[asset] = lp;
-            lendingPoolToAsset[lp] = asset;
+            assetToLendingPool[_assets[i]] = _lendingPools[i];
         }
     }
 
-    function deposit(address _asset, uint256 _amount) public nonReentrant {
+    /**
+        Public actions
+    */
+
+    function deposit(address _asset, uint256 _amount) 
+        public
+        nonReentrant 
+    {
+       _deposit(_asset, _amount);
+    }
+
+
+    function withdraw() 
+        public 
+        nonReentrant 
+    {
+        _withdraw();
+    }
+
+
+    /**
+        Internals
+    */
+    function _deposit(address _asset, uint256 _amount) internal {
         require(userToAsset[msg.sender] == address(0), "You already have deposited into another pool");
+
         // First find the lending pool that corresponds to the asset
         address lendingPoolAddress = assetToLendingPool[_asset];
         LendingPoolMock lp = LendingPoolMock(lendingPoolAddress);
@@ -63,38 +86,42 @@ contract DefirisNAave is ReentrancyGuard {
         totalByAsset[_asset] += _amount;
     }
 
+    // _withdraw withdraw all the interest if not done and split the interest for the different users
+    function _withdraw() internal {
+        require(balances[msg.sender] > 0, "user has no active balance");
+        address user = msg.sender;
 
-    function withdraw() public {
+        // withdraw interest
+        if (!withdrawInitiated) {
+           _withdrawInterests();
+           withdrawInitiated = true;
+        }
 
+        // send the interest for each pool 
+        for (uint256 i = 0; i < assets.length; i++) {
+            ERC20 token = ERC20(assets[i]);
+            token.transfer(user, (totalInterestAccruedPerPool[i]*balances[user])/totalBalanceOfContract);
+        }
 
-        for (uint256 i = 0; i < lendingPools.length; i++) {
-            address lendingPoolAddress = lendingPools[i];
-            address asset = assets[i];
-            address aTokenAddress = aTokens[i];
+        // send back the principal
+        ERC20 token = ERC20(userToAsset[user]);
+        token.transfer(user, balances[user]);
 
-            ATokenMock aToken = ATokenMock(aTokenAddress);
-            LendingPoolMock lp = LendingPoolMock(lendingPoolAddress);
-            ERC20 token = ERC20(asset);
+    }
 
-            uint256 totalInitialBalanceOfPool = totalByAsset[asset];
+    // _withdrawInterests withdraws the interest from the different lending pool in aave
+    function _withdrawInterests() internal {
+         for (uint256 i = 0; i < lendingPools.length; i++) {
+            ATokenMock aToken = ATokenMock(aTokens[i]);
+            LendingPoolMock lp = LendingPoolMock(lendingPools[i]);
+
+            uint256 totalInitialBalanceOfPool = totalByAsset[assets[i]];
             uint256 balanceWithInterest = aToken.balanceOf(address(this));
             
-            uint256 totalInterestAccrued = balanceWithInterest - totalInitialBalanceOfPool;
-            lp.withdraw(asset, balanceWithInterest, address(this));
-            
-            for (uint256 i = 0; i < users.length; i++) {
-                address user = users[i];
-                console.log((totalInterestAccrued*balances[user])/totalBalanceOfContract);
-                token.transfer(user, (totalInterestAccrued*balances[user])/totalBalanceOfContract);
+            totalInterestAccrued = balanceWithInterest - totalInitialBalanceOfPool;
+            totalInterestAccruedPerPool.push(totalInterestAccrued);
+            lp.withdraw(assets[i], balanceWithInterest, address(this));
             }
-        }
-
-        for (uint256 i = 0; i < users.length; i++) {
-            address user = users[i];
-            ERC20 token = ERC20(userToAsset[user]);
-            token.transfer(user, balances[user]);
-        }
-
     }
 
 }

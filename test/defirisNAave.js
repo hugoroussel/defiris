@@ -125,6 +125,8 @@ describe("NAave", function() {
     await aToken3.mintInterest(YEAR_IN_SEC*3)
 
     await defiris.withdraw()
+    await defiris.connect(acc1).withdraw()
+    //await defiris.connect(acc2).withdraw()
 
     console.log('sc1 amount defiris', await getTokenBalance(stablecoin1, defiris))
     console.log('sc2 amount defiris', await getTokenBalance(stablecoin2, defiris))
