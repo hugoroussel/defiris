@@ -108,7 +108,10 @@ describe("Compound", function() {
     await cToken1._setExchangeRateStored(rateAfterTimePasses)
     await cToken2._setExchangeRateStored(rateAfterTimePasses)
     await cToken3._setExchangeRateStored(rateAfterTimePasses)
+
     await defiris.withdraw()
+    await defiris.connect(acc1).withdraw()
+    await defiris.connect(acc2).withdraw()
 
 
 

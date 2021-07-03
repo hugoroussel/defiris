@@ -93,7 +93,7 @@ contract DefirisNAave is ReentrancyGuard {
 
         // withdraw interest
         if (!withdrawInitiated) {
-           _withdrawInterests();
+           _initiateWithdrawal();
            withdrawInitiated = true;
         }
 
@@ -109,8 +109,8 @@ contract DefirisNAave is ReentrancyGuard {
 
     }
 
-    // _withdrawInterests withdraws the interest from the different lending pool in aave
-    function _withdrawInterests() internal {
+    // _initiateWithdrawal withdraws the interest from the different lending pool in aave
+    function _initiateWithdrawal() internal {
          for (uint256 i = 0; i < lendingPools.length; i++) {
             ATokenMock aToken = ATokenMock(aTokens[i]);
             LendingPoolMock lp = LendingPoolMock(lendingPools[i]);

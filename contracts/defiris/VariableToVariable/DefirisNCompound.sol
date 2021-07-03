@@ -13,14 +13,15 @@ contract DefirisNCompound is ReentrancyGuard {
   mapping(address => uint256) balances;
   mapping(address => address) userToAsset;
   mapping(address => address) assetToLendingPool;
-  mapping(address => address) lendingPoolToAsset;
   mapping(address => uint256) totalByAsset;
   mapping(address => uint256) rates;
 
+  bool withdrawInitiated = false;
   uint256 totalBalanceOfContract;
-
   address[] assets;
   address[] lendingPools;
+  uint256[] totalInterestAccruedPerPool;
+
 
   constructor(
     address[] memory _assets, 
@@ -29,15 +30,31 @@ contract DefirisNCompound is ReentrancyGuard {
         assets = _assets;
         lendingPools = _lendingPools;
         for(uint256 i = 0; i < _assets.length; i++) {
-            address asset = _assets[i];
-            address lp = _lendingPools[i];
-            assetToLendingPool[asset] = lp;
-            lendingPoolToAsset[lp] = asset;
+            assetToLendingPool[_assets[i]] = _lendingPools[i];
         }
     }
 
-    function deposit(address _asset, uint256 _amount) public nonReentrant {
-        // First deposit the user asset into the given strategy
+    /**
+        Public actions
+    */
+    function deposit(address _asset, uint256 _amount)
+        public 
+        nonReentrant 
+    {
+        _deposit(_asset, _amount);
+    }
+
+    function withdraw()
+        public 
+        nonReentrant 
+    {
+        _withdraw();
+    }
+
+    /**
+        Internals
+    */
+    function _deposit(address _asset, uint256 _amount) internal {
         require(userToAsset[msg.sender] == address(0), "You already have deposited into another pool");
         address lendingPoolAddress = assetToLendingPool[_asset];
         CERC20Mock cToken = CERC20Mock(lendingPoolAddress);
@@ -59,40 +76,41 @@ contract DefirisNCompound is ReentrancyGuard {
         totalBalanceOfContract += _amount;
         totalByAsset[_asset] += _amount;
     }
+    
+    // _withdraw 
+    // withdraws from all the pools if not done
+    // gives the interest to the user
+    // sends back the principal
+    function _withdraw() internal {
+        require(balances[msg.sender] > 0, "user has no active balance");
 
-    function withdraw() public nonReentrant {
-
-        for (uint256 i = 0; i < lendingPools.length; i++) {
-            address lendingPoolAddress = lendingPools[i];
-            address asset = assets[i];
-            CERC20Mock cToken = CERC20Mock(lendingPoolAddress);
-            ERC20 token = ERC20(asset);
-            uint256 currentRate = cToken.exchangeRateStored();
-            uint256 oldRate = rates[asset];
-            uint256 totalAsset = totalByAsset[asset];
-            console.log(currentRate, oldRate, totalAsset);
-            cToken.redeemUnderlying((currentRate*totalAsset)/oldRate);
-            uint256 totalWithInterest = token.balanceOf(address(this));
-            uint256 interestOnly = totalWithInterest - totalAsset;
-            for (uint256 i = 0; i < users.length; i++) {
-                address user = users[i];
-                uint256 amountDue = (interestOnly*balances[user]/totalBalanceOfContract);
-                token.transfer(user, amountDue);
-            }
+        // withdraw interest
+        if (!withdrawInitiated){
+            _initiateWithdrawal();
+            withdrawInitiated = true;
         }
 
-        for (uint256 i = 0; i < users.length; i++) {
-                address user = users[i];
-                ERC20 token = ERC20(userToAsset[user]);
-                token.transfer(user, balances[user]);
+        address user = msg.sender;
+
+        // send the interest for each pool at the pro rata of the total pool
+        for (uint256 i = 0; i < assets.length; i++) {
+            uint256 amountDue = (totalInterestAccruedPerPool[i]*balances[user]/totalBalanceOfContract);
+            ERC20 token = ERC20(assets[i]);
+            token.transfer(user, amountDue);
         }
-
-
-
         
-
+        // send back the principal
+        ERC20 token = ERC20(userToAsset[user]);
+        token.transfer(user, balances[user]);
     }
 
-
-
+    // _initiateWithdrawal withdraws the interest from the different lending pool in compound
+    function _initiateWithdrawal() internal {
+        for (uint256 i = 0; i < lendingPools.length; i++) {
+            CERC20Mock cToken = CERC20Mock(lendingPools[i]);
+            ERC20 token = ERC20(assets[i]);
+            cToken.redeemUnderlying((cToken.exchangeRateStored()*totalByAsset[assets[i]])/rates[assets[i]]);
+            totalInterestAccruedPerPool.push(token.balanceOf(address(this)) - totalByAsset[assets[i]]);
+        }
+    }
 }
