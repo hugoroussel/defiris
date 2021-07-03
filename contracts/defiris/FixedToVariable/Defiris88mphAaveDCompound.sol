@@ -62,9 +62,38 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
         lastVariableRate = cToken.exchangeRateCurrent();
     }
 
-    // deposits into the fixed pools strategies
-    function depositFixed(uint256 _amount) public nonReentrant{
+    /**
+        Public actions
+    */
+
+    function depositFixed(uint256 _amount)
+        public
+        nonReentrant 
+    {
+        _depositFixed(_amount);
+    }
+
+    function depositVariable(uint256 _amount )
+        public
+        nonReentrant 
+    {
+        _depositVariable(_amount);
+    }
+
+    function withdraw()
+        public
+        nonReentrant
+    {
+        _withdraw();
+    }
+
+    /**
+        Internals
+    */
+    // deposits into the fixed pool strategy
+    function _depositFixed(uint256 _amount) internal {
         require(userToAsset[msg.sender] == address(0), "user already deposited");
+
         // First deposit the token into the fixed interest pool
         fixedToken.transferFrom(msg.sender, address(this), _amount);
         fixedToken.approve(address(fixedPool), _amount);
@@ -72,10 +101,8 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
 
         // Perform bookeping
         uint256 depositID = fixedPool.depositsLength();
-
         depositIDs.push(depositID);
         userToDepositID[msg.sender] = depositID;
-
 
         userBalances[msg.sender] = _amount;
         userToAsset[msg.sender] = address(fixedToken);
@@ -84,7 +111,7 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
     }
 
     // deposits into the variable pools strategies
-    function depositVariable(uint256 _amount) public nonReentrant {
+    function _depositVariable(uint256 _amount) internal{
         require(userToAsset[msg.sender] == address(0), "user already deposited");
 
         // First deposit the token into the variable interest pool
@@ -102,38 +129,15 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
     }
 
     // withdraw 
-    function withdraw() public nonReentrant { 
-        require(userBalances[msg.sender] > 0, "user did not deposit");
+    function _withdraw() internal { 
+        address user = msg.sender;
+        require(userBalances[user] > 0, "user did not deposit");
 
         // The first user initiating the withdrawal will initiate withdrawal from the different pools
         if (!withdrawalInitiated) {
-            // Withdraw from the fixed pool
-            uint totalSupply = MPHToken.totalSupply();
-            MPHToken.approve(address(mphminter), totalSupply);
-            vesting.withdrawVested(address(this), 0);
-
-            // withdraw from the fixed pool for the different deposit ids
-            for(uint256 i = 0; i < depositIDs.length; i++) {
-                fixedPool.withdraw(depositIDs[i], 0);
-            }
-
-            // Book keeping for fixed
-            uint256 WithdrawnedFromFixedPool = fixedToken.balanceOf(address(this));
-            TotalInterestGainedFromFixedPool = WithdrawnedFromFixedPool - totalFixed;
-
-            // Withdraw from the variable pool
-            uint256 currentRate = cToken.exchangeRateStored();
-            cToken.redeemUnderlying((currentRate*totalVariable)/lastVariableRate);
-
-            // Book keeping for variable pool
-            uint256 WithdrawnedFromVariablePool = variableToken.balanceOf(address(this));
-            TotalInterestGainedFromVariablePool = WithdrawnedFromVariablePool - totalVariable;
-
-            // the withdrawal was correctly finished
+           _initiateWithdrawal();
             withdrawalInitiated = true;
         }
-      
-        address user = msg.sender;
 
         // Compute and send the amount due for the fixed interest rate
         uint256 amountDueFixed = (TotalInterestGainedFromFixedPool*userBalances[user]/totalBalanceOfContract);
@@ -151,8 +155,28 @@ contract Defiris88mphAaveDCompound is ReentrancyGuard, ERC721Holder {
         userBalances[user] = 0;
     }
 
+    // _initiateWithdrawal withdraws the interest from the different lending pool of 88mph and Compound
+    // TODO : add support for coupons IDs
+    function _initiateWithdrawal() internal {
+        // Withdraw from the fixed pool
+        MPHToken.approve(address(mphminter), MPHToken.totalSupply());
 
-    
+        // TODO : add the coupon bonds ids here
+        vesting.withdrawVested(address(this), 0);
 
+        // Withdraw from the fixed pool for the different deposit ids
+        for(uint256 i = 0; i < depositIDs.length; i++) {
+            fixedPool.withdraw(depositIDs[i], 0);
+        }
+
+        // Book keeping for fixed
+        TotalInterestGainedFromFixedPool = fixedToken.balanceOf(address(this)) - totalFixed;
+
+        // Withdraw from the variable pool
+        cToken.redeemUnderlying((cToken.exchangeRateStored()*totalVariable)/lastVariableRate);
+
+        // Book keeping for variable pool
+        TotalInterestGainedFromVariablePool = variableToken.balanceOf(address(this)) - totalVariable;
+    }
 
 }
