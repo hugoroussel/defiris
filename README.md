@@ -1,6 +1,5 @@
-# Defiris
 
-![image info](./public/logo.png)
+![image info](./public/logo-large.png)
 
 
 ## Interest rate swaps made easy
@@ -37,10 +36,9 @@ These are experimental contracts made during a hackathon please do not use in pr
 
 - [x] add a frontend 
 - [ ] pool variable to variable compound versus aave
-- [ ] add timelocks : start of period, end of period
+- [ ] pool aave versus 88mph
 - [ ] add support for MPH rewards and support for coupon bonds funding
-- [ ] add getters
-- [ ] add early withdrawal
+- [ ] add early withdrawal and add timelocks : start of period, end of period
 - [ ] add safeMath
 
 
